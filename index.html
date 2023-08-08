@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Список студентов</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <script defer src="main.js"></script>
+</head>
+
+<body>
+  <div class="container">
+    <section>
+      <div class="container">
+        <h1 class="h1-title header">Панель управления студентами</h1>
+        <div class="nav-buttons">
+          <button id="show__add-student" class="btn-outline-success btn">Добавить студента</button>
+          <button id="show__search-student" class="btn-outline-success btn">Найти студента</button>
+        </div>
+        <form id="addStudentForm" class="row gy-2 gx-3 align-item-center">
+          <div class="col-auto col-md-6 first-name__container">
+            <label for="firstName" class="form-label">Фамилия:</label>
+            <input type="text" id="firstName" class="form-control">
+            <div class="alert alert-danger alert__first-name" role="alert">
+              Введите фамилию
+            </div>
+          </div>
+          <div class="col-auto col-md-6 form-item last-name__container">
+            <label for="lastName" class="form-label ">Имя:</label>
+            <input type="text" id="lastName" class="form-control">
+            <div class="alert alert-danger alert__last-name" role="alert">
+              Введите Имя
+            </div>
+          </div>
+          <div class="col-auto col-md-6 form-item patronymic__container">
+            <label for="patronymic" class="form-label ">Отчество:</label>
+            <input type="text" id="patronymic" class="form-control">
+            <div class="alert alert-danger alert__patronymic" role="alert">
+              Введите отчество
+            </div>
+          </div>
+          <div class="col-auto col-md-6 form-item birth-date__container">
+            <label for="birthDate" class="form-label ">Дата рождения:</label>
+            <input type="date" id="birthDate" class="form-control">
+            <div class="alert alert-danger alert__birth-date" role="alert">
+              Введите дату рождения
+            </div>
+            <div class="alert alert-danger alert__birth-date-1900" role="alert">
+              Дата рождения должна находиться в диапазоне от 01.01.1900 до текущей даты
+            </div>
+          </div>
+          <div class="col-auto col-md-6 form-item start-date__container">
+            <label for="starYear" class="form-label ">Год начала обучения:</label>
+            <input type="text" id="startYear" class="form-control">
+            <div class="alert alert-danger alert__start-date" role="alert">
+              Введите год начала обучения
+            </div>
+            <div class="alert alert-danger alert__start-date-2000" role="alert">
+              Год начала обучения должен находиться в диапазоне от 2000-го до текущей даты
+            </div>
+          </div>
+          <div class="col-auto col-md-6 form-item faculty__container">
+            <label for="faculty" class="form-label ">Факультет:</label>
+            <input type="text" id="faculty" class="form-control">
+            <div class="alert alert-danger alert__faculty" role="alert">
+              Введите факультет
+            </div>
+          </div>
+          <button class="btn btn-success add-student">Добавить студента</button>
+        </form>
+        <hr class="hr-2">
+        <form id="searchForm" class="row gy-2 gx-3 align-items-center search">
+          <div class="col-auto col-md-6">
+            <input type="text" class="form-control" placeholder="ФИО" id="search-fio">
+          </div>
+          <div class="col-auto col-md-6">
+            <input type="text" class="form-control" placeholder="Факультет" id="search-faculty">
+          </div>
+          <div class="col-auto col-md-6">
+            <input type="text" class="form-control" placeholder="Год начала обучения" id="search-year-of-admission">
+          </div>
+          <div class="col-auto col-md-6">
+            <input type="text" class="form-control" placeholder="Год окончания обучения" id="search-year-of-graduation">
+          </div>
+          <button type="button" class="btn btn-success button-searh col-md-4" onclick="searchStudents()">Поиск</button>
+        </form>
+      </div>
+    </section>
+
+    <section>
+      <div class="container">
+        <h2 class="header-paragraph header">Студенты</h2>
+        <div class="block">
+          <table id="studentsTable" class="table table-bordered border-success table-striped">
+            <thead>
+              <tr>
+                <th onclick="sortTable(0)">Ф. И. О.</th>
+                <th onclick="sortTable(1)">Факультет</th>
+                <th onclick="sortTable(2)">Дата рождения и возраст</th>
+                <th onclick="sortTable(3)">Годы обучения и номер курса</th>
+              </tr>
+            </thead>
+            <tbody id="studentsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+</body>
+
+</html>
