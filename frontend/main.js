@@ -1,8 +1,10 @@
-var studentsList = [];
-
-window.addEventListener('load', function() {
-  studentsData = getItemsData();
-  getStudentItem();
+window.addEventListener('load', async function() {
+  studentsData = await getStudentData();
+  if(studentsData){
+    getStudentItem(studentsData);
+  } else {
+    console.log("В базе отсутствуют данные")
+  }
 });
 
 const buttonSearchStudents = document.querySelector('.search-students');
@@ -94,9 +96,8 @@ buttonAdd.addEventListener('click', function(e) {
     showErrorAlert('alert__faculty');
     return;
   }
-
-  saveDataToLocalStorage();
   fillForms();
+  clearInputFields()
 });
 
 function showErrorAlert(alertClass) {
@@ -107,18 +108,16 @@ function showErrorAlert(alertClass) {
   }, 5000);
 }
 
-function getItemsData() {
-  let savedData = localStorage.getItem('studentsList');
-  if (savedData) {
-    studentsList = JSON.parse(savedData);
-  }
+function clearInputFields() {
+  document.getElementById('firstName').value = '';
+  document.getElementById('lastName').value = '';
+  document.getElementById('patronymic').value = '';
+  document.getElementById('birthDate').value = '';
+  document.getElementById('startYear').value = '';
+  document.getElementById('faculty').value = '';
 }
 
-function saveDataToLocalStorage() {
-  localStorage.setItem('studentsList', JSON.stringify(studentsList));
-}
-
-function fillForms() {
+async function fillForms() {
   const firstNameStudent = document.getElementById('firstName').value.trim();
   const lastNameStudent = document.getElementById('lastName').value.trim();
   const patronymicStudent = document.getElementById('patronymic').value.trim();
@@ -126,47 +125,93 @@ function fillForms() {
   const startYearStudent = parseInt(document.getElementById('startYear').value);
   const facultyStudent = document.getElementById('faculty').value.trim();
 
-  var student = {
-    firstName: firstNameStudent,
-    lastName: lastNameStudent,
-    patronymic: patronymicStudent,
-    birthDate: birthDateStudent,
-    startYear: startYearStudent,
-    faculty: facultyStudent,
-  };
-
-  studentsList.push(student);
-  getStudentItem();
+  await fetch('http://localhost:3000/api/students', {
+    method: 'POST',
+    body: JSON.stringify({
+      name: firstNameStudent,
+      surname: lastNameStudent,
+      lastname: patronymicStudent,
+      birthday: birthDateStudent,
+      studyStart: startYearStudent,
+      faculty: facultyStudent,
+    }),
+    headers: {
+      "Content-Type": 'application/json'
+    }
+  })
+  const response = await getStudentData();
+  getStudentItem(response)
 }
 
-function getStudentItem() {
-  const table = document.getElementById('studentsTableBody');
-  table.innerHTML = '';
-
-  for (var i = 0; i < studentsList.length; i++) {
-    var student = studentsList[i];
-
-    var row = document.createElement('tr');
-    var fullNameCell = document.createElement('td');
-    var facultyCell = document.createElement('td');
-    var birthDateCell = document.createElement('td');
-    var startYearCell = document.createElement('td');
-
-    fullNameCell.textContent = student.firstName + ' ' + student.lastName + ' ' + student.patronymic;
-    facultyCell.textContent = student.faculty;
-    birthDateCell.textContent = formatDate(new Date(student.birthDate)) + ' (' + calculateAge(new Date(student.birthDate)) + ' лет)';
-    startYearCell.textContent = student.startYear + '-' + (student.startYear + 4) + ' (' + calculateCourse(student.startYear) + ' курс' + ')';
-
-    row.appendChild(fullNameCell);
-    row.appendChild(facultyCell);
-    row.appendChild(birthDateCell);
-    row.appendChild(startYearCell);
-
-    table.appendChild(row);
-    saveDataToLocalStorage();
-    addStudentForm.style.display = 'none'
-    showAddStudentsButton.style.display = 'inline-block'
+async function getStudentData() {
+  try {
+    const response = await fetch('http://localhost:3000/api/students');
+    const dataList = await response.json();
+    return dataList;
+  } catch (error) {
+    console.error('Ошибка при получении данных с сервера:', error);
+    return [];
   }
+}
+
+async function deleteStudent(studentId) {
+  const response = await fetch(`http://localhost:3000/api/students/${studentId}`, {
+    method: 'DELETE',
+  });
+
+  if (response.ok) {
+    studentsData = await getStudentData();
+    getStudentItem(studentsData);
+  } else {
+    console.error('Ошибка при удалении студента');
+  }
+}
+
+async function getStudentItem(students) {
+  const tableBody = document.getElementById('studentsTableBody');
+  tableBody.innerHTML = '';
+
+  if (students.length === 0) {
+    const noDataMessage = document.createElement('tr');
+    const noDataCell = document.createElement('td');
+    noDataCell.colSpan = 5;
+    noDataCell.textContent = 'Нет данных о студентах.';
+    noDataMessage.appendChild(noDataCell);
+    tableBody.appendChild(noDataMessage);
+  } else {
+    students.forEach(student => {
+      const row = document.createElement('tr');
+      const fullNameCell = createTableCell(`${student.name} ${student.surname} ${student.lastname}`);
+      const facultyCell = createTableCell(student.faculty);
+      const birthDateCell = createTableCell(`${formatDate(new Date(student.birthday))} (${calculateAge(new Date(student.birthday))} лет)`);
+      const startYearCell = createTableCell(`${student.studyStart}-${Number(student.studyStart) + 4} (${calculateCourse(student.studyStart)} курс)`);
+      const actionsCell = document.createElement('td');
+
+      const deleteButton = document.createElement('button');
+      deleteButton.textContent = 'Удалить';
+      deleteButton.classList.add('btn', 'btn-success')
+      deleteButton.addEventListener('click', function() {
+        deleteStudent(student.id)
+      });
+
+      row.appendChild(fullNameCell);
+      row.appendChild(facultyCell);
+      row.appendChild(birthDateCell);
+      row.appendChild(startYearCell);
+      row.appendChild(actionsCell);
+      actionsCell.appendChild(deleteButton);
+
+      tableBody.appendChild(row);
+      addStudentForm.style.display = 'none'
+      showAddStudentsButton.style.display = 'inline-block'
+    });
+  }
+}
+
+function createTableCell(text) {
+  const cell = document.createElement('td');
+  cell.textContent = text;
+  return cell;
 }
 
 function formatDate(date) {
@@ -201,42 +246,41 @@ function calculateCourse(startYear) {
   return course;
 }
 
-function searchStudents() {
+async function searchStudents() {
   const searchTermFio = document.getElementById('search-fio').value.trim().toLowerCase();
   const searchTermFaculty = document.getElementById('search-faculty').value.trim().toLowerCase();
   const searchTermStartYear = document.getElementById('search-year-of-admission').value.trim();
   const searchTermEndYear = document.getElementById('search-year-of-graduation').value.trim();
 
-  const tableBody = document.getElementById('studentsTableBody');
-  const tableRows = tableBody.getElementsByTagName('tr');
+  const studentsData = await getStudentData();
+  const tableRows = document.getElementById('studentsTableBody').getElementsByTagName('tr');
 
   for (let i = 0; i < tableRows.length; i++) {
     const row = tableRows[i];
-    const fullNameCell = row.getElementsByTagName('td')[0];
-    const facultyCell = row.getElementsByTagName('td')[1];
-    const birthDateCell = row.getElementsByTagName('td')[2];
-    const startYearCell = row.getElementsByTagName('td')[3];
+    const fullName = row.cells[0].textContent.trim().toLowerCase();
+    const faculty = row.cells[1].textContent.trim().toLowerCase();
+    const startYear = row.cells[3].textContent.trim();
 
-    const fullName = fullNameCell.textContent.trim().toLowerCase();
-    const faculty = facultyCell.textContent.trim().toLowerCase();
-    const birthDate = birthDateCell.textContent.trim();
-    const startYear = startYearCell.textContent.trim();
+    const student = studentsData[i];
+    const nameMatch = student.name.toLowerCase().includes(searchTermFio);
+    const surnameMatch = student.surname.toLowerCase().includes(searchTermFio);
+    const facultyDataMatch = student.faculty.toLowerCase().includes(searchTermFaculty);
+    const startYearDataMatch = student.studyStart.includes(searchTermStartYear);
+    const endYearDataMatch = student.studyStart.includes(searchTermEndYear);
 
-    const fioMatch = fullName.includes(searchTermFio);
-    const facultyMatch = faculty.includes(searchTermFaculty);
-    const startYearMatch = startYear.includes(searchTermStartYear);
-    const endYearMatch = startYear.includes(searchTermEndYear);
+    const shouldShow =
+      (fullName.includes(searchTermFio) || nameMatch || surnameMatch) &&
+      (faculty.includes(searchTermFaculty) || facultyDataMatch) &&
+      (startYear.includes(searchTermStartYear) || startYearDataMatch) &&
+      (startYear.includes(searchTermEndYear) || endYearDataMatch);
 
-    if (fioMatch && facultyMatch && startYearMatch && endYearMatch) {
-      row.style.display = 'table-row';
-    } else {
-      row.style.display = 'none';
-    }
+    row.style.display = shouldShow ? 'table-row' : 'none';
   }
 }
 
+
 function sortTable(columnIndex) {
-  studentsList.sort((a, b) => {
+  studentsData.sort((a, b) => {
     const columnA = getColumnValue(a, columnIndex);
     const columnB = getColumnValue(b, columnIndex);
 
@@ -248,9 +292,9 @@ function sortTable(columnIndex) {
       return 0;
     }
   });
-
-  getStudentItem();
+  getStudentItem(studentsData);
 }
+
 function getColumnValue(student, columnIndex) {
   switch (columnIndex) {
     case 0:
@@ -265,3 +309,4 @@ function getColumnValue(student, columnIndex) {
       return '';
   }
 }
+
